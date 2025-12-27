@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Post } from '../types';
 import { PostCard } from './PostCard';
-import { ArrowLeft, Calendar, Flame, Trophy, Skull, Edit2, Camera, X, Save, TrendingUp, ThumbsDown, Vote, BarChart3, PieChart } from 'lucide-react';
+import { ArrowLeft, Calendar, Flame, Trophy, Skull, Edit2, Camera, X, Save, TrendingUp, ThumbsDown, Vote, BarChart3, PieChart, Image as ImageIcon, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface UserProfileProps {
@@ -15,7 +15,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ username, posts, onBac
   const { user, updateProfile } = useAuth();
   
   // View State
-  const [activeTab, setActiveTab] = useState<'history' | 'stats'>('history');
+  const [activeTab, setActiveTab] = useState<'history' | 'stats' | 'gallery'>('history');
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   
   // Check if viewing own profile
   const isOwner = user?.username === username;
@@ -34,14 +35,26 @@ export const UserProfile: React.FC<UserProfileProps> = ({ username, posts, onBac
 
   // Filter posts for this user
   const userPosts = posts.filter(p => p.author === username).sort((a, b) => b.timestamp - a.timestamp);
+  const userImages = userPosts.filter(p => p.imageUrl);
 
   // Calculate Stats
   const totalPosts = userPosts.length;
   const totalRespects = userPosts.reduce((acc, curr) => acc + curr.reactions.respects, 0);
-  const totalCostlyWs = userPosts.reduce((acc, curr) => acc + curr.reactions.wins, 0); // Renamed variable logic
+  const totalCostlyWs = userPosts.reduce((acc, curr) => acc + curr.reactions.wins, 0); 
   const totalLs = userPosts.reduce((acc, curr) => acc + curr.reactions.l_s, 0);
   const totalVotes = userPosts.reduce((acc, curr) => acc + curr.userVotes.count, 0);
   
+  // Days Since Last Incident Calculation
+  const lastShamePost = userPosts.find(p => p.type === 'shame');
+  let daysSince = 0;
+  let hasIncidents = false;
+  
+  if (lastShamePost) {
+      const diff = Date.now() - lastShamePost.timestamp;
+      daysSince = Math.floor(diff / (1000 * 60 * 60 * 24));
+      hasIncidents = true;
+  }
+
   // Average "Cooked" score
   const avgScore = totalPosts > 0 
     ? Math.round(userPosts.reduce((acc, curr) => acc + (curr.score || 0), 0) / totalPosts) 
@@ -163,6 +176,53 @@ export const UserProfile: React.FC<UserProfileProps> = ({ username, posts, onBac
                 </div>
             </div>
 
+            {/* INDUSTRIAL SAFETY SIGN */}
+            <div className="mt-6 border-t border-neutral-800 pt-6">
+                <div className="bg-neutral-950/50 border border-neutral-800 rounded-xl p-4 flex items-center justify-between relative overflow-hidden group">
+                    {/* Hazzard Tape Pattern Background */}
+                    <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(0,0,0,0.5)_10px,rgba(0,0,0,0.5)_20px)] opacity-20 pointer-events-none"></div>
+                    
+                    <div className="flex items-center gap-4 z-10">
+                        <div className={`
+                            w-16 h-16 rounded-lg flex flex-col items-center justify-center border-2 shadow-lg transition-all duration-500
+                            ${hasIncidents && daysSince === 0 
+                                ? 'bg-red-950 border-red-500 text-red-500 animate-pulse' 
+                                : 'bg-green-950/30 border-green-500/50 text-green-500'}
+                        `}>
+                            {hasIncidents ? (
+                                <>
+                                    <span className="text-3xl font-black leading-none">{daysSince}</span>
+                                    <span className="text-[9px] font-bold uppercase">Days</span>
+                                </>
+                            ) : (
+                                <ShieldCheck size={32} />
+                            )}
+                        </div>
+                        <div>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 mb-1 flex items-center gap-1">
+                                {hasIncidents && daysSince === 0 && <AlertTriangle size={10} className="text-red-500" />}
+                                Safety Record
+                            </h3>
+                            <p className={`font-bold text-sm sm:text-base ${hasIncidents && daysSince === 0 ? 'text-red-500' : 'text-white'}`}>
+                                {hasIncidents ? "SINCE LAST MAJOR INCIDENT" : "NO RECORDED INCIDENTS"}
+                            </p>
+                            {hasIncidents && daysSince === 0 && (
+                                <p className="text-[10px] text-red-400 font-mono mt-0.5">
+                                    The counter has been reset.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Stamp */}
+                    {(!hasIncidents || daysSince > 7) && (
+                        <div className="hidden sm:block rotate-[-12deg] border-4 border-green-500/20 text-green-500/20 font-black text-2xl uppercase p-2 rounded-lg pointer-events-none select-none">
+                            SAFE?
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Stats Summary (High Level) */}
             <div className="grid grid-cols-3 gap-3 mt-6">
                 <div className="bg-neutral-800/50 rounded-xl p-3 text-center border border-neutral-800 flex flex-col items-center justify-center gap-1">
@@ -196,6 +256,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ username, posts, onBac
             className={`pb-3 border-b-2 font-bold text-sm uppercase tracking-wide transition-colors ${activeTab === 'stats' ? 'border-cook-accent text-white' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
           >
               Stats
+          </button>
+          <button 
+            onClick={() => setActiveTab('gallery')}
+            className={`pb-3 border-b-2 font-bold text-sm uppercase tracking-wide transition-colors ${activeTab === 'gallery' ? 'border-cook-accent text-white' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
+          >
+              Gallery
           </button>
       </div>
 
@@ -336,6 +402,58 @@ export const UserProfile: React.FC<UserProfileProps> = ({ username, posts, onBac
                 </div>
             </div>
 
+        </div>
+      )}
+
+      {/* GALLERY TAB */}
+      {activeTab === 'gallery' && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 pb-20">
+            {userImages.length > 0 ? (
+                <div className="grid grid-cols-3 gap-1 sm:gap-2">
+                    {userImages.map(post => (
+                        <div 
+                            key={post.id} 
+                            onClick={() => setViewingImage(post.imageUrl || null)}
+                            className="aspect-square relative group cursor-pointer overflow-hidden rounded-lg bg-neutral-900 border border-neutral-800"
+                        >
+                            <img 
+                                src={post.imageUrl} 
+                                alt="Evidence" 
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                            {post.score && (
+                                <div className={`absolute top-1 right-1 text-[10px] font-black px-1.5 py-0.5 rounded shadow-lg ${post.score > 85 ? 'bg-cook-accent text-white' : 'bg-neutral-800/90 text-white'}`}>
+                                    {post.score}%
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-20 border-2 border-dashed border-neutral-800 rounded-xl">
+                    <ImageIcon className="w-12 h-12 text-neutral-700 mx-auto mb-4" />
+                    <p className="text-neutral-500 font-mono">No visual evidence on file.</p>
+                </div>
+            )}
+        </div>
+      )}
+
+      {/* --- IMAGE VIEWER MODAL --- */}
+      {viewingImage && (
+        <div 
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
+            onClick={() => setViewingImage(null)}
+        >
+            <button className="absolute top-4 right-4 text-neutral-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all">
+                <X size={32} />
+            </button>
+            <img 
+                src={viewingImage} 
+                alt="Full size evidence" 
+                className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95"
+                onClick={(e) => e.stopPropagation()} 
+            />
         </div>
       )}
 
