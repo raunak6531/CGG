@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { Post, Comment } from '../types';
-import { Clock, Skull, Keyboard, Share2, Flame, MessageSquare, Send, CheckCircle2, Copy, Facebook, Twitter, Instagram } from 'lucide-react';
+import { Clock, Keyboard, Share2, Flame, MessageSquare, Send, CheckCircle2, Copy, Facebook, Twitter, Instagram } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PostCardProps {
   post: Post;
+  onAuthorClick?: (author: string) => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, onAuthorClick }) => {
+  const { user, openAuthModal } = useAuth();
+
   // --- Local State ---
   const [localPost, setLocalPost] = useState<Post>(post);
   const [showComments, setShowComments] = useState(false);
@@ -23,91 +27,102 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [voteValue, setVoteValue] = useState(post.score || 50);
   const [hasInteracted, setHasInteracted] = useState(false);
 
+  // --- Checks for Auth ---
+  const requireAuth = (action: () => void) => {
+    if (!user) {
+      openAuthModal();
+    } else {
+      action();
+    }
+  };
+
   // --- Animation Logic for "Press F" ---
   const handleRespect = () => {
-    setLocalPost(prev => ({
-      ...prev,
-      reactions: { ...prev.reactions, respects: prev.reactions.respects + 1 }
-    }));
+    requireAuth(() => {
+        setLocalPost(prev => ({
+            ...prev,
+            reactions: { ...prev.reactions, respects: prev.reactions.respects + 1 }
+        }));
 
-    setIsAnimateF(true);
-    setTimeout(() => setIsAnimateF(false), 200);
+        setIsAnimateF(true);
+        setTimeout(() => setIsAnimateF(false), 200);
 
-    const colors = ['#ef4444', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    const randomRotation = Math.floor(Math.random() * 60) - 30; 
-    const randomLeft = Math.random() * 80 + 10; 
-    
-    setButtonGlowColor(randomColor);
-    setTimeout(() => setButtonGlowColor(''), 300);
+        const colors = ['#ef4444', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        const randomRotation = Math.floor(Math.random() * 60) - 30; 
+        const randomLeft = Math.random() * 80 + 10; 
+        
+        setButtonGlowColor(randomColor);
+        setTimeout(() => setButtonGlowColor(''), 300);
 
-    const id = uuidv4();
-    setFParticles(prev => [...prev, { id, left: randomLeft, color: randomColor, rotation: randomRotation }]);
+        const id = uuidv4();
+        setFParticles(prev => [...prev, { id, left: randomLeft, color: randomColor, rotation: randomRotation }]);
 
-    setTimeout(() => {
-      setFParticles(prev => prev.filter(p => p.id !== id));
-    }, 1000);
+        setTimeout(() => {
+            setFParticles(prev => prev.filter(p => p.id !== id));
+        }, 1000);
+    });
   };
 
   // --- Logic for Constant Metrics ("W" or "L") ---
   const handleW = () => {
-    setLocalPost(prev => {
-      const isRemoving = prev.userHasW;
-      return {
-        ...prev,
-        userHasW: !isRemoving,
-        reactions: {
-          ...prev.reactions,
-          wins: prev.reactions.wins + (isRemoving ? -1 : 1)
-        }
-      };
+    requireAuth(() => {
+        setLocalPost(prev => {
+        const isRemoving = prev.userHasW;
+        return {
+            ...prev,
+            userHasW: !isRemoving,
+            reactions: {
+            ...prev.reactions,
+            wins: prev.reactions.wins + (isRemoving ? -1 : 1)
+            }
+        };
+        });
     });
   };
 
   const handleL = () => {
-    setLocalPost(prev => {
-      const isRemoving = prev.userHasL;
-      return {
-        ...prev,
-        userHasL: !isRemoving,
-        reactions: {
-          ...prev.reactions,
-          l_s: prev.reactions.l_s + (isRemoving ? -1 : 1)
-        }
-      };
+    requireAuth(() => {
+        setLocalPost(prev => {
+        const isRemoving = prev.userHasL;
+        return {
+            ...prev,
+            userHasL: !isRemoving,
+            reactions: {
+            ...prev.reactions,
+            l_s: prev.reactions.l_s + (isRemoving ? -1 : 1)
+            }
+        };
+        });
     });
-  };
-
-  const handleSkull = () => {
-     setLocalPost(prev => ({
-      ...prev,
-      reactions: { ...prev.reactions, skulls: prev.reactions.skulls + 1 }
-    }));
   };
 
   // --- Voting Logic ---
   const handleVoteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // We allow sliding but block confirmation without auth (handled by confirmVote)
     setVoteValue(parseInt(e.target.value));
     setHasInteracted(true);
   };
 
   const confirmVote = () => {
-    if (localPost.userHasVoted) return;
+    requireAuth(() => {
+        if (localPost.userHasVoted) return;
 
-    const newCount = localPost.userVotes.count + 1;
-    const newTotal = localPost.userVotes.totalScore + voteValue;
-    
-    // Weighted Average Calculation
-    const aiWeight = 1;
-    const finalScore = Math.round((newTotal + (localPost.aiScore || 0) * aiWeight) / (newCount + aiWeight));
+        const newCount = localPost.userVotes.count + 1;
+        const newTotal = localPost.userVotes.totalScore + voteValue;
+        
+        // Weighted Average Calculation
+        const aiWeight = 1;
+        const finalScore = Math.round((newTotal + (localPost.aiScore || 0) * aiWeight) / (newCount + aiWeight));
 
-    setLocalPost(prev => ({
-      ...prev,
-      score: finalScore,
-      userVotes: { count: newCount, totalScore: newTotal },
-      userHasVoted: true
-    }));
-    setHasInteracted(false);
+        setLocalPost(prev => ({
+        ...prev,
+        score: finalScore,
+        userVotes: { count: newCount, totalScore: newTotal },
+        userHasVoted: true
+        }));
+        setHasInteracted(false);
+    });
   };
 
   // --- Share Logic ---
@@ -138,18 +153,21 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
     e.preventDefault();
     if (!newComment.trim()) return;
 
-    const comment: Comment = {
-      id: uuidv4(),
-      author: 'You',
-      text: newComment,
-      timestamp: Date.now()
-    };
+    requireAuth(() => {
+        const comment: Comment = {
+            id: uuidv4(),
+            author: user!.username, 
+            authorId: user!.id,
+            text: newComment,
+            timestamp: Date.now()
+        };
 
-    setLocalPost(prev => ({
-      ...prev,
-      comments: [...prev.comments, comment]
-    }));
-    setNewComment('');
+        setLocalPost(prev => ({
+            ...prev,
+            comments: [...prev.comments, comment]
+        }));
+        setNewComment('');
+    });
   };
 
   // --- Render Helpers ---
@@ -175,11 +193,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
   let borderColor = '';
   
   if (isCost) {
-    // Green Theme for Wins/Costs
-    // 0-30: Worth It
-    // 31-60: Calculated Risk
-    // 61-85: Heavy Toll
-    // 86-100: Pyrrhic Victory
     if (currentScore <= 30) {
       colorClass = 'text-green-300';
       barColor = 'bg-green-400';
@@ -204,7 +217,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
     borderColor = isCritical ? 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.15)]' : 'border-cook-border hover:border-green-800';
     
   } else {
-    // Red/Orange Theme for Shame
     if (currentScore <= 30) {
         colorClass = 'text-cook-safe';
         barColor = 'bg-cook-safe';
@@ -244,7 +256,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
       <div className="p-6">
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center gap-3">
+          <div 
+             className={`flex items-center gap-3 ${onAuthorClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+             onClick={() => onAuthorClick && onAuthorClick(localPost.author)}
+          >
             <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${isCritical ? (isCost ? 'bg-green-950/30 border-green-900' : 'bg-red-950/30 border-red-900') : 'bg-neutral-800 border-neutral-700'}`}>
               <div className={`font-black text-lg ${isCritical ? (isCost ? 'text-green-500' : 'text-cook-accent') : 'text-neutral-400'}`}>
                 {localPost.author.charAt(0).toUpperCase()}
@@ -252,7 +267,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-gray-200 text-base">{localPost.author}</h3>
+                <h3 className="font-bold text-gray-200 text-base underline-offset-2 hover:underline decoration-neutral-600">{localPost.author}</h3>
                 {localPost.type === 'cost' && (
                   <span className="text-[10px] bg-green-500/10 text-green-500 border border-green-500/20 px-1.5 rounded uppercase font-bold">
                     At What Cost?
@@ -341,7 +356,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
                         value={voteValue}
                         onChange={handleVoteChange}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                        title="Slide to rate!"
+                        title={user ? "Slide to rate!" : "Login to rate!"}
                     />
                  )}
               </div>
@@ -496,15 +511,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
                             >
                                 <Twitter size={14} /> Twitter / X
                             </a>
-                            <div className="px-3 py-2 text-xs text-neutral-600 border-t border-neutral-800 mt-1">
-                                <div className="flex gap-2 items-center mb-1">
-                                   <Instagram size={12} /> <span className="text-[10px]">Instagram (Mobile App)</span>
-                                </div>
-                                <div className="flex gap-2 items-center opacity-75">
-                                   <span className="text-[10px] w-3 text-center">👻</span> <span className="text-[10px]">Snapchat (Mobile App)</span>
-                                </div>
-                                <p className="text-[9px] text-neutral-700 mt-1 italic">Use 'Share' on mobile for these</p>
-                            </div>
                         </div>
                     </div>
                 )}
@@ -536,7 +542,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
                         type="text" 
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Add a roast..."
+                        placeholder={user ? "Add a roast..." : "Login to roast..."}
                         className="w-full bg-neutral-950 border border-neutral-800 rounded-lg pl-4 pr-10 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-cook-border focus:ring-1 focus:ring-cook-border"
                     />
                     <button 

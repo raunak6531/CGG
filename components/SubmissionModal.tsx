@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { Send, Image as ImageIcon, X, Trophy, AlertTriangle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Image as ImageIcon, X, Trophy, AlertTriangle, Lock } from 'lucide-react';
 import { PostType } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SubmissionModalProps {
   isOpen: boolean;
@@ -10,24 +11,29 @@ interface SubmissionModalProps {
 }
 
 export const SubmissionModal: React.FC<SubmissionModalProps> = ({ isOpen, onClose, onSubmit, isGlobalLoading }) => {
-  const [author, setAuthor] = useState('');
+  const { user, openAuthModal } = useAuth();
   const [story, setStory] = useState('');
   const [type, setType] = useState<PostType>('shame');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Reset form when opened
+  useEffect(() => {
+    if (isOpen) {
+      setStory('');
+      setSelectedImage(null);
+      setType('shame');
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!author.trim() || !story.trim()) return;
-    onSubmit(author, story, type, selectedImage || undefined);
+    if (!user || !story.trim()) return;
     
-    // Reset
-    setAuthor('');
-    setStory('');
-    setType('shame');
-    setSelectedImage(null);
+    // Pass user.username as author
+    onSubmit(user.username, story, type, selectedImage || undefined);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,7 +48,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ isOpen, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
@@ -65,9 +71,32 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ isOpen, onClos
           </button>
         </div>
 
-        {/* Scrollable Body */}
-        <div className="p-6 overflow-y-auto custom-scrollbar">
-          <form id="submission-form" onSubmit={handleSubmit} className="space-y-6">
+        {/* Body */}
+        <div className="p-6 overflow-y-auto custom-scrollbar relative">
+          
+          {/* Auth Blocker Overlay if not logged in */}
+          {!user && (
+            <div className="absolute inset-0 z-10 bg-neutral-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 rounded-b-2xl">
+              <div className="bg-neutral-800 p-4 rounded-full mb-4">
+                <Lock className="w-8 h-8 text-neutral-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Login Required</h3>
+              <p className="text-neutral-400 text-sm mb-6 max-w-xs">
+                You need to be logged in to post your shameful moments. We need to know who to roast.
+              </p>
+              <button
+                onClick={() => {
+                  onClose(); // Close this modal
+                  openAuthModal(); // Open auth modal
+                }}
+                className="bg-cook-accent hover:bg-cook-accentHover text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider transition-all"
+              >
+                Login / Sign Up
+              </button>
+            </div>
+          )}
+
+          <form id="submission-form" onSubmit={handleSubmit} className={`space-y-6 ${!user ? 'opacity-20 pointer-events-none' : ''}`}>
             
             {/* Category Selection */}
             <div className="grid grid-cols-2 gap-3">
@@ -98,18 +127,15 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ isOpen, onClos
                </button>
             </div>
 
-            {/* Author Input */}
+            {/* Author Display (Read Only) */}
             <div>
-              <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Identify Yourself (Or Don't)</label>
-              <input
-                type="text"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                placeholder="Alias (e.g., UnluckyUser404)"
-                maxLength={20}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-600 focus:outline-none focus:border-cook-accent focus:ring-1 focus:ring-cook-accent transition-all"
-                required
-              />
+              <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Posting As</label>
+              <div className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-neutral-700 flex items-center justify-center text-[10px] font-black">
+                   {user?.username.charAt(0).toUpperCase()}
+                </div>
+                <span className="font-medium">{user?.username}</span>
+              </div>
             </div>
 
             {/* Story Input */}
@@ -171,7 +197,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ isOpen, onClos
           <button
             form="submission-form"
             type="submit"
-            disabled={isGlobalLoading || !author || !story}
+            disabled={isGlobalLoading || !story || !user}
             className={`w-full font-black uppercase tracking-wider py-4 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
               type === 'shame' 
                 ? 'bg-cook-accent hover:bg-cook-accentHover shadow-[0_0_20px_rgba(239,68,68,0.2)] hover:shadow-[0_0_30px_rgba(239,68,68,0.4)] text-white' 

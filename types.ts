@@ -3,21 +3,34 @@ export interface JudgmentResult {
   verdict: string;
 }
 
+export interface User {
+  id: string;
+  username: string;
+  displayName?: string; // New: Display name (e.g. "The Chef")
+  bio?: string;         // New: User bio
+  avatar?: string;      // URL or Base64 string
+  joinedAt: number;
+}
+
 export interface Comment {
   id: string;
   author: string;
+  authorId?: string; // Link to user
   text: string;
   timestamp: number;
 }
 
 export type PostType = 'shame' | 'cost';
+export type ViewState = 'home' | 'trending' | 'videos' | 'profile';
 
 export interface Post {
   id: string;
   type: PostType; // 'shame' = Pure Disaster, 'cost' = Won but at what cost
   author: string;
+  authorId?: string; // Link to user
   story: string;
   imageUrl?: string; // Base64 string for the image
+  videoUrl?: string; // URL for video content
   timestamp: number;
   
   // Scoring
