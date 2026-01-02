@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useRef, useState } from 'react';
 import { Post } from '../types';
 import { Heart, MessageSquare, Share2, Play, Volume2, VolumeX } from 'lucide-react';

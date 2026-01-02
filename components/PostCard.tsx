@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Post, Comment } from '../types';
 import { Clock, Keyboard, Share2, Flame, MessageSquare, Send, CheckCircle2, Copy, Facebook, Twitter, Instagram } from 'lucide-react';
@@ -127,7 +129,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onAuthorClick }) => {
 
   // --- Share Logic ---
   const handleShareClick = async () => {
-    if (navigator.share) {
+    if (typeof window !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
           title: `CGG - Am I Cooked?`,
@@ -143,9 +145,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onAuthorClick }) => {
   };
 
   const copyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setShowShareMenu(false);
-    alert("Link copied to clipboard!"); 
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href);
+      setShowShareMenu(false);
+      alert("Link copied to clipboard!"); 
+    }
   };
 
   // --- Comment Logic ---
@@ -497,20 +501,24 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onAuthorClick }) => {
                             <button onClick={copyLink} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-neutral-800 rounded-lg transition-colors text-left">
                                 <Copy size={14} /> Copy Link
                             </button>
-                            <a 
-                              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} 
-                              target="_blank" rel="noopener noreferrer"
-                              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-neutral-800 rounded-lg transition-colors text-left"
-                            >
-                                <Facebook size={14} /> Facebook
-                            </a>
-                            <a 
-                              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Am I Cooked? Verdict: ${localPost.score}%`)}&url=${encodeURIComponent(window.location.href)}`} 
-                              target="_blank" rel="noopener noreferrer"
-                              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-neutral-800 rounded-lg transition-colors text-left"
-                            >
-                                <Twitter size={14} /> Twitter / X
-                            </a>
+                            {typeof window !== 'undefined' && (
+                              <>
+                                <a 
+                                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} 
+                                  target="_blank" rel="noopener noreferrer"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-neutral-800 rounded-lg transition-colors text-left"
+                                >
+                                    <Facebook size={14} /> Facebook
+                                </a>
+                                <a 
+                                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Am I Cooked? Verdict: ${localPost.score}%`)}&url=${encodeURIComponent(window.location.href)}`} 
+                                  target="_blank" rel="noopener noreferrer"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-neutral-800 rounded-lg transition-colors text-left"
+                                >
+                                    <Twitter size={14} /> Twitter / X
+                                </a>
+                              </>
+                            )}
                         </div>
                     </div>
                 )}

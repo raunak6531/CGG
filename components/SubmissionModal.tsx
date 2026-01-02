@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Image as ImageIcon, X, Trophy, AlertTriangle, Lock } from 'lucide-react';
 import { PostType } from '../types';

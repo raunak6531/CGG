@@ -2,19 +2,78 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# CGG - Am I Cooked?
 
-This contains everything you need to run your app locally.
+A social platform for sharing moments of failure, bad luck, and embarrassment. The app uses Google's Gemini AI to analyze submissions and assign a "cooked score" with a sarcastic, Gen Z-style roast.
 
-View your app in AI Studio: https://ai.studio/apps/drive/16dj9i-wl3ZKQ3KvaNavTtCF_aAji_4rA
+## Tech Stack
+
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **AI Integration:** Google Gemini (via `@google/genai`)
+- **Icons:** Lucide React
+- **State Management:** React Context API
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js 18+ and npm/yarn
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+
+2. Set up environment variables:
+   - Create a `.env.local` file in the root directory
+   - Add your Gemini API key:
+     ```
+     GEMINI_API_KEY=your_api_key_here
+     ```
+
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Build for Production
+
+```bash
+npm run build
+npm start
+```
+
+## Project Structure
+
+```
+/
+├── app/              # Next.js app directory
+│   ├── api/         # API routes (Gemini service)
+│   ├── globals.css  # Global styles
+│   ├── layout.tsx   # Root layout
+│   └── page.tsx     # Home page
+├── components/       # React components
+├── contexts/         # React contexts (Auth)
+├── services/         # Client-side services
+├── types.ts          # TypeScript interfaces
+└── tailwind.config.ts # Tailwind configuration
+```
+
+## Features
+
+- **Feed Viewing:** Browse posts categorized as "Shame" or "At What Cost"
+- **AI Analysis:** Every submission is analyzed by Gemini AI
+- **Interactions:** Vote, react (F, Skull, W, L), and comment on posts
+- **User Profiles:** View stats, history, and rank
+- **Video Feed:** TikTok/Reels-style video content view
+
+## Migration Notes
+
+This project was migrated from React + Vite to Next.js. All functionality, UI, and styling remain the same. The main changes:
+
+- Components are now client components (marked with `'use client'`)
+- Gemini API calls are handled via Next.js API routes (`/api/judge`)
+- Routing uses Next.js App Router instead of client-side routing
+- Build system changed from Vite to Next.js
