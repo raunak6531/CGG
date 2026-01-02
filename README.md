@@ -11,6 +11,7 @@ A social platform for sharing moments of failure, bad luck, and embarrassment. T
 - **Framework:** Next.js 15 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
+- **Authentication:** Clerk
 - **AI Integration:** Google Gemini (via `@google/genai`)
 - **Icons:** Lucide React
 - **State Management:** React Context API
@@ -26,10 +27,14 @@ A social platform for sharing moments of failure, bad luck, and embarrassment. T
 
 2. Set up environment variables:
    - Create a `.env.local` file in the root directory
-   - Add your Gemini API key:
+   - Add your API keys:
      ```
-     GEMINI_API_KEY=your_api_key_here
+     GEMINI_API_KEY=your_gemini_api_key_here
+     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+     CLERK_SECRET_KEY=your_clerk_secret_key
      ```
+   - Get your Clerk keys from [clerk.com](https://clerk.com) (create a free account)
+   - Get your Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 
 3. Run the development server:
    ```bash
@@ -69,6 +74,14 @@ npm start
 - **User Profiles:** View stats, history, and rank
 - **Video Feed:** TikTok/Reels-style video content view
 
+## Authentication
+
+This app uses [Clerk](https://clerk.com) for authentication. Users can:
+- Sign up with email, Google, or other social providers
+- Sign in to create posts and interact with content
+- View and edit their profiles
+- All authentication is handled securely by Clerk
+
 ## Migration Notes
 
 This project was migrated from React + Vite to Next.js. All functionality, UI, and styling remain the same. The main changes:
@@ -77,3 +90,4 @@ This project was migrated from React + Vite to Next.js. All functionality, UI, a
 - Gemini API calls are handled via Next.js API routes (`/api/judge`)
 - Routing uses Next.js App Router instead of client-side routing
 - Build system changed from Vite to Next.js
+- Authentication migrated from mock localStorage to Clerk

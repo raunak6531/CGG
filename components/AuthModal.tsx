@@ -2,26 +2,14 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { SignIn, SignUp } from '@clerk/nextjs';
 import { X, Flame } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, closeAuthModal, login, signup } = useAuth();
+  const { isAuthModalOpen, closeAuthModal } = useAuth();
   const [isLoginView, setIsLoginView] = useState(true);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState(''); // Visual only for mock
 
   if (!isAuthModalOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim()) return;
-    
-    if (isLoginView) {
-      login(username);
-    } else {
-      signup(username);
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -30,15 +18,15 @@ export const AuthModal: React.FC = () => {
         onClick={closeAuthModal}
       />
       
-      <div className="relative bg-cook-card border border-cook-border w-full max-w-sm rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 p-8">
+      <div className="relative bg-cook-card border border-cook-border w-full max-w-md rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
         <button 
           onClick={closeAuthModal}
-          className="absolute top-4 right-4 text-neutral-500 hover:text-white"
+          className="absolute top-4 right-4 z-10 text-neutral-500 hover:text-white bg-neutral-900/80 rounded-full p-2"
         >
           <X size={20} />
         </button>
 
-        <div className="flex flex-col items-center mb-6">
+        <div className="flex flex-col items-center pt-8 pb-4 px-6 border-b border-neutral-800">
           <div className="bg-neutral-800 p-3 rounded-full mb-3">
              <Flame className="w-8 h-8 text-cook-accent" />
           </div>
@@ -50,39 +38,49 @@ export const AuthModal: React.FC = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-600 focus:outline-none focus:border-cook-accent transition-all"
-              placeholder="e.g. CookedMaster69"
-              autoFocus
+        <div className="p-6">
+          {isLoginView ? (
+            <SignIn 
+              appearance={{
+                elements: {
+                  rootBox: "mx-auto",
+                  card: "bg-transparent shadow-none",
+                  headerTitle: "hidden",
+                  headerSubtitle: "hidden",
+                  socialButtonsBlockButton: "bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700",
+                  formButtonPrimary: "bg-cook-accent hover:bg-cook-accentHover text-white",
+                  formFieldInput: "bg-neutral-900 border-neutral-700 text-white",
+                  formFieldLabel: "text-neutral-400",
+                  footerActionLink: "text-cook-accent hover:text-cook-accentHover",
+                  identityPreviewText: "text-white",
+                  identityPreviewEditButton: "text-cook-accent",
+                },
+              }}
+              afterSignInUrl="/"
+              routing="hash"
             />
-          </div>
-          
-          <div>
-            <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-600 focus:outline-none focus:border-cook-accent transition-all"
-              placeholder="••••••••"
+          ) : (
+            <SignUp 
+              appearance={{
+                elements: {
+                  rootBox: "mx-auto",
+                  card: "bg-transparent shadow-none",
+                  headerTitle: "hidden",
+                  headerSubtitle: "hidden",
+                  socialButtonsBlockButton: "bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700",
+                  formButtonPrimary: "bg-cook-accent hover:bg-cook-accentHover text-white",
+                  formFieldInput: "bg-neutral-900 border-neutral-700 text-white",
+                  formFieldLabel: "text-neutral-400",
+                  footerActionLink: "text-cook-accent hover:text-cook-accentHover",
+                },
+              }}
+              afterSignUpUrl="/"
+              routing="hash"
             />
-          </div>
+          )}
+        </div>
 
-          <button
-            type="submit"
-            className="w-full bg-cook-accent hover:bg-cook-accentHover text-white font-black uppercase tracking-wider py-3 rounded-lg shadow-lg shadow-red-900/20 transition-all active:scale-[0.98] mt-2"
-          >
-            {isLoginView ? 'Enter' : 'Create Account'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
+        <div className="px-6 pb-6 text-center border-t border-neutral-800 pt-4">
           <button
             onClick={() => setIsLoginView(!isLoginView)}
             className="text-xs text-neutral-400 hover:text-white underline underline-offset-2"

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from '@clerk/nextjs';
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,11 +13,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-[#050505] text-gray-100 font-sans">
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className="dark">
+        <body className="min-h-screen bg-[#050505] text-gray-100 font-sans">
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
-
